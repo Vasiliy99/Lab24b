@@ -1,21 +1,25 @@
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
 #include <wchar.h>
 #include <unistd.h>
 
-typedef struct knot{
-int key;
-char ** info;
-int color;
-int n_inf;
-struct knot * root;
-struct knot * prev;
-struct knot * right;
-struct knot * left;
-}knot;
+typedef struct knot knot;
+
+struct knot {
+    int key;
+    char ** info;
+    int color;
+    int n_inf;
+    struct knot * root;
+    struct knot * prev;
+    struct knot * right;
+    struct knot * left;
+};
 
 int Show_possibilities();
 
@@ -27,7 +31,7 @@ knot * right_turn(knot * top);
 
 knot * left_turn(knot * top);
 
-int del_knot(knot * Elist, int key2, char ** info_save);
+int del_knot(knot * Elist, int key2);
 
 int adding_knot(knot * Elist, int key1, char * info1);
 

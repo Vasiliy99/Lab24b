@@ -2,37 +2,41 @@
 int Show_possibilities()
 {
 	printf("\n");
-	printf("1)Input knot\n");
-	printf("2)Deleat knot\n");	
-	printf("3)Chack graph\n");
-	printf("4)Input graph from file\n");
-	printf("5)Output graph\n");
-	printf("6)Find by key\n");
-	printf("7)Find by nearblest key\n");	
-	printf("0)End of work\n");
+	printf("1) Input knot\n");
+	printf("2) Deleat knot\n");
+	printf("3) Chack graph\n");
+	printf("4) Input graph from file\n");
+	printf("5) Output graph\n");
+	printf("6) Find by key\n");
+	printf("7) Find by nearblest key\n");
+	printf("0) End of work\n");
 	printf("\n");
 return 0;
 }
 
 struct knot *knot_new(int key, char * info, int l_of_i, knot * Elist, knot * prev) {
-    	knot *now = calloc(1, sizeof(knot));
-    	printf("knot = %p key = %u value = %u\n", now, key, info);
-    	now->key = key;
-    	now->info = calloc(1, sizeof(char*));
-    	now->info[0] = calloc(l_of_i, sizeof(char));
-	strcpy(now->info[0], info);
-	strcat(now->info[0], '\0');
-    	now->left = Elist;
-    	now->right = Elist;
-	now->n_inf = 1;
-	now->color = 1;
-	now->prev = prev;
-	now->root = NULL;
-    	return now;
+    struct knot *now = calloc(1, sizeof(struct knot));
+
+    printf("knot = %p key = %d value = %s\n", now, key, info);
+
+    now->key = key;
+    now->n_inf = 1;
+    now->info = calloc(1, sizeof(char*));
+    now->info[0] = strdup(info);
+
+    now->left = Elist;
+    now->right = Elist;
+    now->color = 1;
+    now->prev = prev;
+    now->root = NULL;
+
+    return now;
 }
 
-int adding_knot(knot* Elist, int key1, char * info1) {
-	knot * now = Elist->root;
+int adding_knot(knot* Elist, int key1, char *info1) {
+
+	struct knot *now = Elist->root;
+
 	while (now != NULL) {
 		if ((key1 > now->key) && now->right) {
 			now = now->right;
@@ -47,20 +51,23 @@ int adding_knot(knot* Elist, int key1, char * info1) {
 		}
 		else if ((key1 < now->key) && (now->left == NULL)) {
 			now->left = knot_new(key1, info1, strlen(info1), Elist, now);
-			Fixing_in(Elist, now->left);			
+			Fixing_in(Elist, now->left);
 			break;
 		}
 		else if (key1 == now->key)
 		{
 			now->n_inf = now->n_inf + 1;
-			now->info = realloc(now->info, (now->n_inf)*sizeof(char*));
-			now->info[now->n_inf-1] = calloc(sizeof(info1) + 1, sizeof(char));
-			strcpy(now->info[now->n_inf-1], info1);
-			strcat(now->info[now->n_inf-1], '\0');
+			now->info = realloc(now->info, (now->n_inf)*sizeof(char *));
+			now->info[now->n_inf-1] = strdup(info1);
 			break;
 		}
 	}
-	return 0;
+
+    if (Elist->root == NULL) {
+        Elist->root = knot_new(key1, info1, strlen(info1), Elist, NULL);
+    }
+
+    return 0;
 }
 
 enum result {
@@ -72,7 +79,12 @@ enum way {
     L_LEFT  = 1,
 };
 
-int del_knot(knot* Elist, int key2, char ** info_save) {
+/**
+ * Удаляет узел по его ключу
+ *
+**/
+int del_knot(struct knot *Elist, int key2) {
+        char ** info_save;
 	knot * root = Elist->root;
 	if (Elist->root==NULL) {
 		return E_OK;
@@ -241,23 +253,36 @@ void OBXOD(knot * now3, knot * Elist)
 	}
 }
 
-int Show_graph(knot * Elist)
-{
-int err=0;
-printf("\n");
-int se=0;
-knot * now=Elist->root;
-printf("root: \n");
-printf("-----\n");
-printf("| %d |\n", now->key);
-printf("| %d |\n", now->info);
-printf("-----\n");
-int jn=0;
-int i1=0;
-for(int k=2;; k=k*2)
-{
+void show_node(struct knot *cur) {
+    if (cur != NULL) {
+        printf("root: \n");
+        printf("-----\n");
+        printf("| %d |\n", cur->key);
+        for(int n=0; n < cur->n_inf; n++) {
+            printf("| %s |\n", cur->info[n]);
+        }
+        printf("-----\n");
+    } else {
+        printf("root: empty\n");
+    }
+}
+
+/**
+ * Вывод в порядке убывания
+ *
+**/
+int Show_graph(struct knot *Elist) {
+    int err=0;
+    printf("\n");
+    int se = 0;
+    struct knot *now = Elist->root;
+    show_node(now);
+
+    int jn=0;
+    int i1=0;
+    for(int k=2;; k=k*2) {
 	printf("| ");
-	se=0;
+	se = 0;
 	jn++;
 	for(int i=k-1; i>=0; i--)
 	{
@@ -267,12 +292,12 @@ for(int k=2;; k=k*2)
 		{
 			if(i1/Pow(10, jn-j)==1)
 			{
-				if(now==NULL)
+				if(now == NULL)
 				{
 					err=1;
 					break;
 				}
-				now=now->left;
+				now = now->left;
 			}
 			else
 			{
@@ -299,10 +324,11 @@ for(int k=2;; k=k*2)
 		}
 	}
 	printf("\n");
-	if(se==k)
+	if(se==k) {
 		break;
-}
-printf("\n");
+	}
+    }
+    printf("\n");
 }
 
 int find_by_key(knot* Elist, int key6)
@@ -392,20 +418,18 @@ knot * right_turn(knot * top)
 	return top;
 }
 
-int ToBin(int k)
-{
-if(k==0)
+int ToBin(int k) {
+    if(k==0)
 	return 0;
-int n = 0;
-int res = 0;
-while(k>1)
-{
+    int n = 0;
+    int res = 0;
+    while(k>1) {
 	res = res + (k%2)*Pow(10, n);
 	k=k/2;
 	n++;
-}
-res = res + Pow(10, n);
-return res;
+    }
+    res = res + Pow(10, n);
+    return res;
 }
 
 int Pow(int a, int n)
