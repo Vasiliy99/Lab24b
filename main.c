@@ -1,5 +1,6 @@
 
 #include "lib.h"
+#include "reader.h"
 
 struct app {
     bool         running;     /* Application running */
@@ -9,82 +10,6 @@ struct app {
 };
 
 static struct app app;
-
-struct knot *elist_new(char * info4) {
-    struct knot *result = calloc(1, sizeof(struct knot));
-    result->root->info = strdup(info4);
-    result->root->n_inf = strlen(info4);
-    return result;
-}
-
-int func4plus(const char *input_file) {
-    FILE * f_input;
-    int k_or_i=0;
-    int key4=0;
-    char * info4 = calloc(2, sizeof(char));
-    int s_of_i = 1;
-    int ready=0;
-    char symb;
-//    char * T_Null = {'\0'};
-//    char * symb_str = calloc(1, sizeof(char));
-    if ((f_input = fopen(input_file, "r")) == NULL) {
-        fprintf(stderr, "Unable to open file %s to read\n", input_file);
-        return 2;
-    }
-
-    while(fscanf(f_input, "%c", &symb) != EOF) {
-//        printf("value = %u\n", symb);
-
-        if(symb == '\n')
-        {
-            k_or_i++;
-            if(k_or_i % 2 == 0)
-            {
-		printf("key: %d\n", key4);
-		printf("info: ");
-		for(int l=0; l<strlen(info4); l++)
-		{
-			printf("%c", info4[l]);
-		}
-		printf("\n");
-                if (ready==0)
-                {
-                    ready=1;
-                    app.Elist->root = elist_new();
-                    app.Elist->root->key = key4;
-                    app.Elist->root->color = 0;
-                    app.Elist->root->right = app.Elist;
-                    app.Elist->root->left = app.Elist;
-                    app.Elist->root->root = NULL;
-                }
-                else
-                {
-                    adding_knot(app.Elist, key4, info4);
-                }
-                s_of_i = 1;
-                info4 = realloc(info4, s_of_i*sizeof(char));
-            }
-        }
-        else {
-            if (k_or_i%2==0) {
-                int znach = (int)(symb);
-                key4 = key4*10 + znach - 48;
-//                printf("value = %u\n", key4);
-            }
-            if (k_or_i%2==1) {
-                s_of_i++;
-//                symb_str[0] = symb;
-                info4 = realloc(info4, s_of_i*sizeof(char));
-                info4[s_of_i-2] = symb;
-            }
-        }
-    }
-    adding_knot(app.Elist, key4, info4);
-//    printf("Last: key = %u value = %u\n", key4, info4);
-//    free(symb_str);
-    fclose(f_input);
-    return 0;
-}
 
 /**
  * Выход
@@ -123,7 +48,15 @@ char *input_text(const char *prompt) {
 void func1() {
     int key1 = input_number("Input key of your knot");
     char *info1 = input_text("Input info in your knot");
-    adding_knot(app.Elist, key1, info1);
+    printf("debug: key = %d value = %s\n", key1, info1);
+    if (app.Elist == NULL) {
+        printf("debug: func1: create root\n");
+        app.Elist = elist_new();
+        app.Elist->root = knot_new(key1, info1, app.Elist, app.Elist);
+    } else {
+        printf("debug: func1: add node\n");
+        adding_knot(app.Elist, key1, info1);
+    }
     free(info1);
 }
 
@@ -151,6 +84,18 @@ void func3() {
     printf("Time of checking: %10.f seconds\n", duration3);
 }
 
+void custom_read_pair(int key, char *value) {
+    printf("debug: read_pair: key = %d value = %s\n", key, value);
+
+    if (app.Elist == NULL) {
+        app.Elist = elist_new();
+        app.Elist->root = knot_new(key, value, app.Elist, app.Elist);
+    } else {
+        adding_knot(app.Elist, key, value);
+    }
+
+}
+
 void func4() {
     char *input_file = input_text("Enter source filename");
     time_t start4 = time(NULL);
@@ -158,7 +103,8 @@ void func4() {
         perror("Missed file");
         return;
     }
-    func4plus(input_file);
+    /* Reading */
+    read_pair(input_file, custom_read_pair);
     time_t stop4 = time(NULL);
     double duration4 = stop4 - start4;
     printf("Time of downloading: %10.f seconds\n", duration4);
@@ -185,24 +131,12 @@ int prompt() {
     return comm;
 }
 
-void elist_reset(struct knot *Elist) {
-    Elist->info = NULL;
-    Elist->key = 0;
-    Elist->n_inf = 0;
-    Elist->root = NULL;
-    Elist->prev = NULL;
-    Elist->color = 0;
-    Elist->right = NULL;
-    Elist->left = NULL;
-}
-
 void init() {
 
     app.running = true;
     app.start0 = time(NULL);
 
-    app.Elist = calloc(1, sizeof(struct knot));
-    elist_reset(app.Elist);
+    app.Elist = NULL;
 
 }
 

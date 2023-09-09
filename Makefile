@@ -14,7 +14,10 @@ main.o: main.c
 lib.o: lib.c
 	$(CC) $(CFLAGS) -c lib.c -o lib.o
 
-$(TARGET): main.o lib.o
-	$(CC) $(CFLAGS) -o main main.o lib.o
+reader.o: reader.c
+	$(CC) $(CFLAGS) -c reader.c -o reader.o
+
+$(TARGET): main.o lib.o reader.o
+	$(CC) $(CFLAGS) -o main main.o lib.o reader.o
 
 .PHONY: all
