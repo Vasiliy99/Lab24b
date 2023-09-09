@@ -10,10 +10,10 @@ struct app {
 
 static struct app app;
 
-struct knot *elist_new() {
+struct knot *elist_new(char * info4) {
     struct knot *result = calloc(1, sizeof(struct knot));
-    result->root->info = NULL;
-    result->root->n_inf = 0;
+    result->root->info = strdup(info4);
+    result->root->n_inf = strlen(info4);
     return result;
 }
 
@@ -40,6 +40,13 @@ int func4plus(const char *input_file) {
             k_or_i++;
             if(k_or_i % 2 == 0)
             {
+		printf("key: %d\n", key4);
+		printf("info: ");
+		for(int l=0; l<strlen(info4); l++)
+		{
+			printf("%c", info4[l]);
+		}
+		printf("\n");
                 if (ready==0)
                 {
                     ready=1;
@@ -68,7 +75,7 @@ int func4plus(const char *input_file) {
                 s_of_i++;
 //                symb_str[0] = symb;
                 info4 = realloc(info4, s_of_i*sizeof(char));
-                 info4[s_of_i-2] = symb;
+                info4[s_of_i-2] = symb;
             }
         }
     }
@@ -261,3 +268,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
