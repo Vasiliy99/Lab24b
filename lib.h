@@ -23,6 +23,12 @@ struct knot {
 
 int Show_possibilities();
 
+void elist_reset(struct knot *Elist);
+
+struct knot *elist_new();
+
+struct knot *knot_new(int key, char *value, struct knot *Elist, struct knot *prev);
+
 int Fixing_in(knot * Elist, knot * new);
 
 int Fixing_del(knot * Elist, knot * new);
