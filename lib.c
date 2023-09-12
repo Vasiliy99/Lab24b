@@ -127,8 +127,8 @@ static char **info_deep_copy(struct knot *cur) {
 **/
 static void info_deep_release(struct knot *cur) {
     for (int j=0; j < cur->n_inf; j++) {
-        char *info = cur->info[j];
-        free(info);
+        //char *info = cur->info[j];
+        free(cur->info[j]);
         cur->info[j] = NULL; // <---
     }
     free(cur->info);
@@ -209,8 +209,9 @@ int del_knot(struct knot *Elist, int key2) {
 
                     printf("knot = %p key = %u case = right\n", save_now, save_now->key);
 
-                    //save_now->left = Elist;
-                    //save_now->right = Elist;
+                    save_now->left = NULL;
+                    save_now->right = NULL;
+		    save_now->info=NULL;
                     free(save_now);
                 }
                 else if(l_or_r == L_LEFT)
@@ -238,13 +239,16 @@ int del_knot(struct knot *Elist, int key2) {
                     save_now = root->left;
 
                     root->key = save_now->key;
+                    root->n_inf = save_now->n_inf;
                     root->info = save_now->info;
                     root->left = save_now->left;
                     root->right = save_now->right;
 
                     printf("knot = %p key = %u case = left1\n", save_now, save_now->key);
 
-                    //save_now->left = Elist;
+                    save_now->left = NULL;
+                    save_now->right = NULL;
+		    save_now->info=NULL;
                     free(save_now);
                 }
                 else if(l_or_r == 0) {
@@ -268,7 +272,7 @@ int del_knot(struct knot *Elist, int key2) {
             else if((now->right != Elist) && (now->left != Elist)) {
                 int key_save = 0;
 
-                /* Поиск минимального значения */
+                /* Поиск минимального значения правого поддерева*/
                 struct knot *post = now->right;
                 struct knot *post_prev = now;
                 while(post->left != Elist) {
@@ -297,6 +301,9 @@ int del_knot(struct knot *Elist, int key2) {
                 now->n_inf = n_inf_save;
 
                 /* Освобождаем post */
+		post ->left = NULL;
+                post->right = NULL;
+		post->info=NULL;
                 free(post);
 
                 break;
@@ -461,6 +468,7 @@ int find_by_key(knot* Elist, int key6)
 int find_by_near_key(knot * Elist, int key7)
 {
     knot* now = Elist->root;
+    knot *lit = NULL;
     while(key7 != now->key)
     {
         if(key7 > now->key)
@@ -468,12 +476,53 @@ int find_by_near_key(knot * Elist, int key7)
         else
             now = now->left;
     }
+    if (now->prev != Elist)
+    	lit = now->prev;
+    else if (now->prev == Elist && now->right!=Elist)
+	lit = now->right;
+    else if (now->prev == Elist && now->right==Elist && now->left!=Elist)
+    	lit = now->left;
+    else
+    {
+	printf("Error: only one element\n");
+	return 1;
+    }
+    knot * now_p = now->prev;
+    while(now_p != Elist)
+    {
+	if(abs(now_p->key - key7) <= abs(lit->key - key7))
+	{
+	    lit = now_p;
+	}
+	now_p = now_p->prev;
+    }
+    knot * now_r= now->right;
+    while(now_r != Elist)
+    {
+	if(abs(now_r->key - key7) <= abs(lit->key - key7))
+	{
+	    lit = now_r;
+	}
+	now_r = now_r->left;
+    }
+    knot * now_l= now->left;
+    while(now_l != Elist)
+    {
+	if(abs(now_l->key - key7) <= abs(lit->key - key7))
+	{
+	    lit = now_l;
+	}
+	now_l = now_l->right;
+    }
+    find_by_key(Elist, lit->key);
+/*
     if(abs(now->right->key - now->key)<=abs(now->key - now->left->key) && abs(now->right->key - now->key)<=abs(now->key - now->prev->key))
         find_by_key(Elist, now->right->key);
     if(abs(now->prev->key - now->key)<=abs(now->key - now->right->key) && abs(now->prev->key - now->key)<=abs(now->key - now->left->key))
         find_by_key(Elist, now->prev->key);
     if(abs(now->left->key - now->key)<=abs(now->key - now->right->key) && abs(now->left->key - now->key)<=abs(now->key - now->prev->key))
         find_by_key(Elist, now->left->key);
+*/
     return 0;
 }
 
