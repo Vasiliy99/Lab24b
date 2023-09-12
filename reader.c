@@ -24,7 +24,6 @@ int read_pair(const char *input_file, read_pair_cb read_pair) {
             line_number++;
             if((line_number % 2) == 0) {
                 // Line 2
-		value[len]='\0';		
                 read_pair(key, value);
                 key = INVALID_VALUE;
             } else {
@@ -37,17 +36,12 @@ int read_pair(const char *input_file, read_pair_cb read_pair) {
             len = 0;
 	    value = NULL;
         } else {
-            if (value == NULL) {
-                len = 1;
-                value = (char *)calloc(1, sizeof(char)+1);
-                value[len - 1] = symb;
-		printf("debug: %c\n", value[len-1]);
-            } else {
-                len = len + 1;
-                value = (char *)realloc(value, len*sizeof(char)+1);
-                value[len - 1] = symb;
-		printf("debug: %c\n", value[len-1]);
-            }
+            size_t new_len = len + 1;
+            value = (char *)realloc(value, (new_len+1)*sizeof(char));
+            value[new_len - 1] = symb;
+            value[new_len] = '\0';
+            len = new_len;
+            printf("debug: %s\n", value);
         }
     }
     /* Last pair check */

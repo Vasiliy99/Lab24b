@@ -20,4 +20,7 @@ reader.o: reader.c
 $(TARGET): main.o lib.o reader.o
 	$(CC) $(CFLAGS) -o main main.o lib.o reader.o
 
-.PHONY: all
+check:
+	valgrind --leak-check=full ./main 
+
+.PHONY: all clean check

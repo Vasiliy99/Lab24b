@@ -35,8 +35,8 @@ int input_number(const char *prompt) {
  * Note: Программист в ответе за выделенную память функцией `input_text`
  */
 char *input_text(const char *prompt) {
-    char *value = calloc(512, sizeof(char));
     int lenn = 512;
+    char *value = (char *)calloc(lenn, sizeof(char));
     printf("%s\n", prompt);
     scanf("%s", value);
     return value;
@@ -107,7 +107,8 @@ void func4() {
     read_pair(input_file, custom_read_pair);
     time_t stop4 = time(NULL);
     double duration4 = stop4 - start4;
-//    printf("Time of downloading: %10.f seconds\n", duration4);
+    printf("Time of downloading: %10.f seconds\n", duration4);
+    free(input_file);
 }
 
 void func5() {
