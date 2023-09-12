@@ -35,8 +35,8 @@ int input_number(const char *prompt) {
  * Note: Программист в ответе за выделенную память функцией `input_text`
  */
 char *input_text(const char *prompt) {
-    char *value = calloc(512, sizeof(char));
     int lenn = 512;
+    char *value = (char *)calloc(lenn, sizeof(char));
     printf("%s\n", prompt);
     scanf("%s", value);
     return value;
@@ -85,7 +85,7 @@ void func3() {
 }
 
 void custom_read_pair(int key, char *value) {
-    printf("debug: read_pair: key = %d value = %s\n", key, value);
+//    printf("debug: read_pair: key = %d value = %s\n", key, value);
 
     if (app.Elist == NULL) {
         app.Elist = elist_new();
@@ -108,6 +108,7 @@ void func4() {
     time_t stop4 = time(NULL);
     double duration4 = stop4 - start4;
     printf("Time of downloading: %10.f seconds\n", duration4);
+    free(input_file);
 }
 
 void func5() {
@@ -117,12 +118,12 @@ void func5() {
 
 void func6() {
     int key7 = input_number("Input key");
-    find_by_near_key(app.Elist, key7);
+    find_by_key(app.Elist, key7);
 }
 
 void func7() {
     int key7 = input_number("Input key of findouble element");
-    find_by_key(app.Elist, key7);
+    find_by_near_key(app.Elist, key7);
 }
 
 int prompt() {
@@ -202,4 +203,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

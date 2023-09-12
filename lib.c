@@ -109,20 +109,52 @@ enum way {
 };
 
 /**
+ * Содает копию
+ *
+ * Note: Получатель должен заботиться о памяти
+**/
+static char **info_deep_copy(struct knot *cur) {
+    char **info_save = (char **)malloc(cur->n_inf * sizeof(char *));
+    for (int j=0; j < cur->n_inf; j++) {
+        info_save[j] = strdup(cur->info[j]);
+    }
+    return info_save;
+}
+
+/**
+ * Осовобожддаем память векора значений узла
+ *
+**/
+static void info_deep_release(struct knot *cur) {
+    for (int j=0; j < cur->n_inf; j++) {
+        char *info = cur->info[j];
+        free(info);
+        cur->info[j] = NULL; // <---
+    }
+    free(cur->info);
+    cur->info = NULL; // <---
+}
+
+/**
  * Удаляет узел по его ключу
  *
 **/
 int del_knot(struct knot *Elist, int key2) {
     char ** info_save;
 
+    /* Нет корня */
     struct knot *root = Elist->root;
     if (Elist->root == NULL) {
         return E_OK;
     }
 
+    /* Когда у корня все листья NIL */
     if ((root->key == key2) && (root->left==Elist) && (root->right==Elist)) {
         printf("knot = %p key = %u case = root\n", root, key2);
-        // TODO - release info
+        for(int i = 0; i < Elist->root->n_inf; i++) {
+            free(Elist->root->info[i]);
+        }
+        free(Elist->root->info);
         free(Elist->root);
         return E_OK;
     }
@@ -152,111 +184,121 @@ int del_knot(struct knot *Elist, int key2) {
             return 1;
         }
         else if(key2 == now->key) {
-            if((now->left==Elist) && (now->right==Elist)) {
+            if((now->left == Elist) && (now->right == Elist)) {
                 if(l_or_r == L_RIGHT)
                     prev->right = Elist;
                 else
                     prev->left = Elist;
                 printf("knot = %p key = %u case = both\n", now, now->key);
-                for(int i=0; i < now->n_inf; i++) {
-                    free(now->info[i]);
-                }
-                free(now->info);
+
+                info_deep_release(now);
                 free(now);
+
                 break;
             }
-            else if((now->left == Elist) && now->right!=Elist)
-            {
+            else if((now->left == Elist) && (now->right != Elist)) {
                 if (l_or_r==-1)
                 {
-                    root->key = root->right->key;
-                    root->info = root->right->info;
                     save_now = root->right;
+
+                    root->key = save_now->key;
+                    root->info = save_now->info;
+                    root->n_inf = save_now->n_inf;
                     root->left = save_now->left;
                     root->right = save_now->right;
-                    save_now->right = Elist;
+
                     printf("knot = %p key = %u case = right\n", save_now, save_now->key);
+
+                    //save_now->left = Elist;
+                    //save_now->right = Elist;
                     free(save_now);
                 }
                 else if(l_or_r == L_LEFT)
                 {
                     prev->right = now->right;
-                    now->right=Elist;
+                    now->right = Elist;
                     printf("knot = %p key = %u\n", now, now->key);
+                    // TODO - free info
+                    info_deep_release(now);
                     free(now);
                 }
                 else
                 {
                     prev->left = now->right;
-                    now->right=Elist;
+                    now->right = Elist;
                     printf("knot = %p key = %u\n", now, now->key);
+                    // TODO - free info
+                    info_deep_release(now);
                     free(now);
                 }
                 break;
             }
-            else if((now->right == Elist) && now->left!=Elist) {
+            else if((now->right == Elist) && (now->left != Elist)) {
                 if (l_or_r == -1) {
-                    root->key = root->left->key;
-                    root->info = root->left->info;
                     save_now = root->left;
+
+                    root->key = save_now->key;
+                    root->info = save_now->info;
                     root->left = save_now->left;
                     root->right = save_now->right;
-                    save_now->left=Elist;
+
                     printf("knot = %p key = %u case = left1\n", save_now, save_now->key);
+
+                    //save_now->left = Elist;
                     free(save_now);
                 }
                 else if(l_or_r == 0) {
                     prev->right = now->left;
                     now->left = Elist;
                     printf("knot = %p key = %u case = left2\n", now, now->key);
+                    // TODO - free info
+                    info_deep_release(now);
                     free(now);
                 }
                 else if(l_or_r == 1) {
                     prev->left = now->left;
                     now->left = Elist;
                     printf("knot = %p key = %u case = left3\n", now, now->key);
+                    // TODO - free info
+                    info_deep_release(now);
                     free(now);
                 }
                 break;
             }
             else if((now->right != Elist) && (now->left != Elist)) {
                 int key_save = 0;
-                knot *post = now->right;
-                knot *post_prev = now;
-                while(post->left) {
+
+                /* Поиск минимального значения */
+                struct knot *post = now->right;
+                struct knot *post_prev = now;
+                while(post->left != Elist) {
                     post_prev = post;
                     post = post->left;
                 }
                 key_save = post->key;
-                char ** info_save = realloc(info_save, post->n_inf*sizeof(char*));
-                for (int j=0; j<now->n_inf; j++)
-                {
-                    info_save[j] = calloc(strlen(post->info[j]), sizeof(char));
-                    for (int q=0; q<strlen(post->info[j]); q++)
-                    {
-                        info_save[j][q] = post->info[j][q];
-                    }
-                }
-                if(post_prev != now)
-                {
+                char **info_save = info_deep_copy(post);
+                unsigned n_inf_save = post->n_inf;
+
+                /* ... */
+                if(post_prev != now) {
                     post_prev->left = post->right;
-                }
-                else
-                {
-                    post_prev->right=post->right;
+                } else {
+                    post_prev->right = post->right;
                 }
                 post->right = Elist;
+
+                /* Отладка */
                 printf("knot = %p key = %u case = both\n", post, post->key);
-                free(post);
+
+                /* Перевешиваем ключи */
                 now->key = key_save;
-                for (int j=0; j<post->n_inf; j++)
-                {
-                    for (int q=0; q<strlen(post->info[j]); q++)
-                    {
-                        post->info[j][q] = info_save[j][q];
-                        free(post->info[j]);
-                    }
-                }            
+                info_deep_release(now);
+                now->info = info_save;
+                now->n_inf = n_inf_save;
+
+                /* Освобождаем post */
+                free(post);
+
                 break;
             }
         }
@@ -276,11 +318,18 @@ void OBXOD(struct knot *now3, struct knot *Elist)
         {
             OBXOD(now3->right, Elist);
         }
+        printf("Found Key: %d and Info: ", now3->key);
+	for(int i=0; i<now3->n_inf; i++)
+	{
+		for(int j=0; j<strlen(now3->info[i]); j++)
+			printf("%c", now3->info[i][j]);
+		printf(", ");
+	}
+	printf("and their link: %p\n", now3);
         if (now3->left !=Elist)
         {
             OBXOD(now3->left, Elist);
         }
-        printf("Found Key: %d and Info: %d and their link %p: %d\n", now3->key, now3->info, now3);
         return ;
     }
 }
@@ -364,10 +413,9 @@ int Show_graph(struct knot *Elist) {
 
 int find_by_key(knot* Elist, int key6)
 {
-    knot * now=Elist;
+    knot * now=Elist->root;
     knot* prev=NULL;
-    knot* root = Elist->root;
-    if(root==NULL)
+    if(Elist->root==NULL)
     {
         return 1;
     }
@@ -399,7 +447,7 @@ int find_by_key(knot* Elist, int key6)
                 printf("found element: ");
                 for(int j=0; j<strlen(now->info[i]); j++)
                 {
-                    printf("%d", now->info[i][j]);
+                    printf("%c", now->info[i][j]);
                 }
                 printf("\n");
                 printf("with key: %d & link: %p\n", now->key, now);
@@ -420,11 +468,11 @@ int find_by_near_key(knot * Elist, int key7)
         else
             now = now->left;
     }
-    if(abs(now->right->key - now->key)<abs(now->key - now->left->key) && abs(now->right->key - now->key)<abs(now->key - now->prev->key))
+    if(abs(now->right->key - now->key)<=abs(now->key - now->left->key) && abs(now->right->key - now->key)<=abs(now->key - now->prev->key))
         find_by_key(Elist, now->right->key);
-    if(abs(now->prev->key - now->key)<abs(now->key - now->right->key) && abs(now->prev->key - now->key)<abs(now->key - now->left->key))
+    if(abs(now->prev->key - now->key)<=abs(now->key - now->right->key) && abs(now->prev->key - now->key)<=abs(now->key - now->left->key))
         find_by_key(Elist, now->prev->key);
-    if(abs(now->left->key - now->key)<abs(now->key - now->right->key) && abs(now->left->key - now->key)<abs(now->key - now->prev->key))
+    if(abs(now->left->key - now->key)<=abs(now->key - now->right->key) && abs(now->left->key - now->key)<=abs(now->key - now->prev->key))
         find_by_key(Elist, now->left->key);
     return 0;
 }

@@ -21,32 +21,26 @@ int read_pair(const char *input_file, read_pair_cb read_pair) {
     /* Step 2. Reading */
     while(fscanf(f_input, "%c", &symb) != EOF) {
         if(symb == '\n') {
-            printf("debug: line_number = %u value = %s\n", line_number, value);
             line_number++;
             if((line_number % 2) == 0) {
                 // Line 2
-                printf("debug: value = %s\n", value);
                 read_pair(key, value);
                 key = INVALID_VALUE;
             } else {
                 // Line 1
                 key = atoi(value);
-                printf("debug: key = %d\n", key);
             }
             // Release memory
             free(value);
             len = 0;
             value = NULL;
         } else {
-            if (value == NULL) {
-                len = 1;
-                value = (char *)calloc(1, sizeof(char));
-                value[len - 1] = symb;
-            } else {
-                len = len + 1;
-                value = realloc(value, len*sizeof(char));
-                value[len - 1] = symb;
-            }
+            size_t new_len = len + 1;
+            value = (char *)realloc(value, (new_len+1)*sizeof(char));
+            value[new_len - 1] = symb;
+            value[new_len] = '\0';
+            len = new_len;
+            printf("debug: %s\n", value);
         }
     }
     /* Last pair check */

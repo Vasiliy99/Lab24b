@@ -1,3 +1,4 @@
+#include <string.h>
 
 typedef void (*read_pair_cb)(int key, char *value);
 
