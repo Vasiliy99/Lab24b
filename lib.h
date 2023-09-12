@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -23,12 +22,6 @@ struct knot {
 
 int Show_possibilities();
 
-void elist_reset(struct knot *Elist);
-
-struct knot *elist_new();
-
-struct knot *knot_new(int key, char *value, struct knot *Elist, struct knot *prev);
-
 int Fixing_in(knot * Elist, knot * new);
 
 int Fixing_del(knot * Elist, knot * new);
@@ -52,3 +45,13 @@ int find_by_near_key(knot * Elist, int key7);
 int ToBin(int k);
 
 int Pow(int a, int n);
+
+struct knot *elist_new();
+
+struct knot *knot_new(int key, char *value, struct knot *Elist, struct knot *prev);
+
+void elist_reset(struct knot *Elist);
+
+void add_node_info(struct knot *now, char *info1);
+
+void show_node(struct knot *now);
