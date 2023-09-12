@@ -122,7 +122,9 @@ int del_knot(struct knot *Elist, int key2) {
 
     if ((root->key == key2) && (root->left==Elist) && (root->right==Elist)) {
         printf("knot = %p key = %u case = root\n", root, key2);
-        // TODO - release info
+	for(int i = 0; i<Elist->root->n_inf; i++)
+		free(Elist->root->info[i]);
+	free(Elist->root->info);
         free(Elist->root);
         return E_OK;
     }
@@ -223,7 +225,7 @@ int del_knot(struct knot *Elist, int key2) {
                 int key_save = 0;
                 knot *post = now->right;
                 knot *post_prev = now;
-                while(post->left) {
+                while(post->left != Elist) {
                     post_prev = post;
                     post = post->left;
                 }
@@ -276,11 +278,18 @@ void OBXOD(struct knot *now3, struct knot *Elist)
         {
             OBXOD(now3->right, Elist);
         }
+        printf("Found Key: %d and Info: ", now3->key);
+	for(int i=0; i<now3->n_inf; i++)
+	{
+		for(int j=0; j<strlen(now3->info[i]); j++)
+			printf("%c", now3->info[i][j]);
+		printf(", ");
+	}
+	printf("and their link: %p\n", now3);
         if (now3->left !=Elist)
         {
             OBXOD(now3->left, Elist);
         }
-        printf("Found Key: %d and Info: %d and their link %p: %d\n", now3->key, now3->info, now3);
         return ;
     }
 }
@@ -364,10 +373,9 @@ int Show_graph(struct knot *Elist) {
 
 int find_by_key(knot* Elist, int key6)
 {
-    knot * now=Elist;
+    knot * now=Elist->root;
     knot* prev=NULL;
-    knot* root = Elist->root;
-    if(root==NULL)
+    if(Elist->root==NULL)
     {
         return 1;
     }
@@ -399,7 +407,7 @@ int find_by_key(knot* Elist, int key6)
                 printf("found element: ");
                 for(int j=0; j<strlen(now->info[i]); j++)
                 {
-                    printf("%d", now->info[i][j]);
+                    printf("%c", now->info[i][j]);
                 }
                 printf("\n");
                 printf("with key: %d & link: %p\n", now->key, now);
@@ -420,11 +428,11 @@ int find_by_near_key(knot * Elist, int key7)
         else
             now = now->left;
     }
-    if(abs(now->right->key - now->key)<abs(now->key - now->left->key) && abs(now->right->key - now->key)<abs(now->key - now->prev->key))
+    if(abs(now->right->key - now->key)<=abs(now->key - now->left->key) && abs(now->right->key - now->key)<=abs(now->key - now->prev->key))
         find_by_key(Elist, now->right->key);
-    if(abs(now->prev->key - now->key)<abs(now->key - now->right->key) && abs(now->prev->key - now->key)<abs(now->key - now->left->key))
+    if(abs(now->prev->key - now->key)<=abs(now->key - now->right->key) && abs(now->prev->key - now->key)<=abs(now->key - now->left->key))
         find_by_key(Elist, now->prev->key);
-    if(abs(now->left->key - now->key)<abs(now->key - now->right->key) && abs(now->left->key - now->key)<abs(now->key - now->prev->key))
+    if(abs(now->left->key - now->key)<=abs(now->key - now->right->key) && abs(now->left->key - now->key)<=abs(now->key - now->prev->key))
         find_by_key(Elist, now->left->key);
     return 0;
 }
