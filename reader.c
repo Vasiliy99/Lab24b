@@ -28,12 +28,13 @@ int read_pair(const char *input_file, read_pair_cb read_pair) {
                 key = INVALID_VALUE;
             } else {
                 // Line 1
+		value[len]='\0';
                 key = atoi(value);
             }
             // Release memory
             free(value);
             len = 0;
-            value = NULL;
+	    value = NULL;
         } else {
             size_t new_len = len + 1;
             value = (char *)realloc(value, (new_len+1)*sizeof(char));
