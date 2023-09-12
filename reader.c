@@ -19,22 +19,27 @@ int read_pair(const char *input_file, read_pair_cb read_pair) {
         return 2;
     }
     /* Step 2. Reading */
-    while(fscanf(f_input, "%c", &symb) != EOF) {
+    for(;;) {
+        size_t size = fread(&symb, sizeof(char), 1, f_input);
+        if ((size == 0) || (symb == EOF)) {
+            break;
+        }
         if(symb == '\n') {
             line_number++;
             if((line_number % 2) == 0) {
                 // Line 2
+                printf("debug: read pair: key = %u value = %s\n", key, value);
                 read_pair(key, value);
                 key = INVALID_VALUE;
             } else {
                 // Line 1
-		value[len]='\0';
                 key = atoi(value);
+                printf("debug: read key: key = %u <- %s\n", key, value);
             }
             // Release memory
             free(value);
             len = 0;
-	    value = NULL;
+            value = NULL;
         } else {
             size_t new_len = len + 1;
             value = (char *)realloc(value, (new_len+1)*sizeof(char));
@@ -44,11 +49,15 @@ int read_pair(const char *input_file, read_pair_cb read_pair) {
             printf("debug: %s\n", value);
         }
     }
-    /* Last pair check */
+    /* Step 3. Last pair check */
     if (key != INVALID_VALUE) {
         read_pair(key, value);
     }
-    /* Step 3. Close */
+    /* Step 4. Release memory */
+    if (value != NULL) {
+        free(value);
+    }
+    /* Step 5. Close */
     fclose(f_input);
     return 0;
 }
