@@ -15,11 +15,6 @@ int Show_possibilities() {
     return 0;
 }
 
-enum Color {
-    COLOR_BLACK = 0,
-    COLOR_RED   = 1,
-};
-
 void elist_reset(struct knot *Elist) {
     Elist->info = NULL;
     Elist->key = 0;
@@ -31,17 +26,29 @@ void elist_reset(struct knot *Elist) {
     Elist->left = NULL;
 }
 
+void add_node_info(struct knot *now, char *info1) {
+    if (info1 == NULL) {
+        printf("warn: add_node_info empty argument\n");
+        return;
+    }
+    now->n_inf = now->n_inf + 1;
+    now->info = (char **)realloc(now->info, (now->n_inf)*sizeof(char *));
+    now->info[now->n_inf - 1] = strdup(info1);
+}
+
 struct knot *knot_new(int key, char *value, struct knot *Elist, struct knot *prev) {
+    printf("debug: knot_new: key = %u value = %s\n", key, value);
     struct knot *now = (struct knot *)calloc(1, sizeof(struct knot));
     now->key = key;
-    now->info = (char **)calloc(1, sizeof(char *));
-    now->info[0] = strdup(value);
-    now->n_inf = 1;
+    now->info = NULL;
+    now->n_inf = 0;
     now->color = COLOR_RED;
     now->root = NULL;
     now->left = Elist;
     now->right = Elist;
     now->prev = prev;
+    /* Добавить значение в info */
+    add_node_info(now, value);
     return now;
 }
 
@@ -50,25 +57,25 @@ struct knot *elist_new() {
     Elist->key = -1;
     Elist->info = NULL;
     Elist->n_inf = 0;
-    Elist->root = NULL;
+    Elist->root = Elist;
     Elist->left = Elist;
     Elist->right = Elist;
     Elist->color = COLOR_BLACK;
-    Elist->prev = NULL;
+    Elist->prev = Elist;
     return Elist;
 }
 
-void add_node_info(struct knot *now, char *info1) {
-    now->n_inf = now->n_inf + 1;
-    now->info = (char **)realloc(now->info, (now->n_inf)*sizeof(char *));
-    now->info[now->n_inf - 1] = strdup(info1);
+void elist_release(struct knot *now) {
+    free(now);
 }
+
 
 int adding_knot(struct knot *Elist, int key1, char *info1) {
 
     struct knot *now = Elist->root;
 
-    while (now != NULL) {
+    while (now != Elist) {
+
         if ((key1 > now->key) && (now->right != Elist)) {
             printf("debug: move right node\n");
             now = now->right;
@@ -94,6 +101,11 @@ int adding_knot(struct knot *Elist, int key1, char *info1) {
             add_node_info(now, info1);
             break;
         }
+    }
+
+    if (Elist->root == Elist) {
+        Elist->root = knot_new(key1, info1, Elist, Elist);
+        Elist->root->color = COLOR_BLACK;
     }
 
     return 0;
@@ -142,20 +154,22 @@ static void info_deep_release(struct knot *cur) {
 int del_knot(struct knot *Elist, int key2) {
     char ** info_save;
 
+    printf("debug: del_knot: key = %d\n", key2);
+
     /* Нет корня */
     struct knot *root = Elist->root;
-    if (Elist->root == NULL) {
+    if (Elist->root == Elist) {
         return E_OK;
     }
 
     /* Когда у корня все листья NIL */
-    if ((root->key == key2) && (root->left==Elist) && (root->right==Elist)) {
-        printf("knot = %p key = %u case = root\n", root, key2);
-        for(int i = 0; i < Elist->root->n_inf; i++) {
-            free(Elist->root->info[i]);
-        }
-        free(Elist->root->info);
+    if ((root->key == key2) && (root->left == Elist) && (root->right == Elist)) {
+        printf("debug: del_knot: knot = %p key = %u case = root\n", root, key2);
+
+        info_deep_release(root);
         free(Elist->root);
+        Elist->root = NULL;
+
         return E_OK;
     }
 
@@ -179,16 +193,18 @@ int del_knot(struct knot *Elist, int key2) {
             printf("warn: no knot available: key = %u\n", key2);
             return 1;
         }
-        else if(key2 < now->key && (now->left == Elist)) {
+        else if((key2 < now->key) && (now->left == Elist)) {
             printf("warn: no knot available: key = %u\n", key2);
             return 1;
         }
         else if(key2 == now->key) {
             if((now->left == Elist) && (now->right == Elist)) {
-                if(l_or_r == L_RIGHT)
+                if (l_or_r == L_RIGHT) {
                     prev->right = Elist;
-                else
+                } else {
                     prev->left = Elist;
+                }
+
                 printf("knot = %p key = %u case = both\n", now, now->key);
 
                 info_deep_release(now);
@@ -197,9 +213,10 @@ int del_knot(struct knot *Elist, int key2) {
                 break;
             }
             else if((now->left == Elist) && (now->right != Elist)) {
-                if (l_or_r==-1)
-                {
-                    save_now = root->right;
+                if (l_or_r == -1) {
+                    save_now = now->right;
+
+                    info_deep_release(root);
 
                     root->key = save_now->key;
                     root->info = save_now->info;
@@ -214,8 +231,7 @@ int del_knot(struct knot *Elist, int key2) {
 		    save_now->info=NULL;
                     free(save_now);
                 }
-                else if(l_or_r == L_LEFT)
-                {
+                else if(l_or_r == L_RIGHT) {
                     prev->right = now->right;
                     now->right = Elist;
                     printf("knot = %p key = %u\n", now, now->key);
@@ -223,8 +239,7 @@ int del_knot(struct knot *Elist, int key2) {
                     info_deep_release(now);
                     free(now);
                 }
-                else
-                {
+                else if (l_or_r == L_LEFT) {
                     prev->left = now->right;
                     now->right = Elist;
                     printf("knot = %p key = %u\n", now, now->key);
@@ -238,9 +253,12 @@ int del_knot(struct knot *Elist, int key2) {
                 if (l_or_r == -1) {
                     save_now = root->left;
 
+                    info_deep_release(root);
+
                     root->key = save_now->key;
                     root->n_inf = save_now->n_inf;
                     root->info = save_now->info;
+                    root->n_inf = save_now->n_inf;
                     root->left = save_now->left;
                     root->right = save_now->right;
 
@@ -251,7 +269,7 @@ int del_knot(struct knot *Elist, int key2) {
 		    save_now->info=NULL;
                     free(save_now);
                 }
-                else if(l_or_r == 0) {
+                else if(l_or_r == L_RIGHT) {
                     prev->right = now->left;
                     now->left = Elist;
                     printf("knot = %p key = %u case = left2\n", now, now->key);
@@ -259,7 +277,7 @@ int del_knot(struct knot *Elist, int key2) {
                     info_deep_release(now);
                     free(now);
                 }
-                else if(l_or_r == 1) {
+                else if(l_or_r == L_LEFT) {
                     prev->left = now->left;
                     now->left = Elist;
                     printf("knot = %p key = %u case = left3\n", now, now->key);
@@ -279,6 +297,7 @@ int del_knot(struct knot *Elist, int key2) {
                     post_prev = post;
                     post = post->left;
                 }
+
                 key_save = post->key;
                 char **info_save = info_deep_copy(post);
                 unsigned n_inf_save = post->n_inf;
@@ -295,15 +314,15 @@ int del_knot(struct knot *Elist, int key2) {
                 printf("knot = %p key = %u case = both\n", post, post->key);
 
                 /* Перевешиваем ключи */
-                now->key = key_save;
                 info_deep_release(now);
+
+                now->key = key_save;
                 now->info = info_save;
                 now->n_inf = n_inf_save;
 
                 /* Освобождаем post */
-		post ->left = NULL;
-                post->right = NULL;
-		post->info=NULL;
+
+                info_deep_release(post);
                 free(post);
 
                 break;
@@ -576,9 +595,9 @@ int Pow(int a, int n)
 }
 
 int Fixing_in(knot * Elist, knot * new) {
-    if(new->color == 1)
+    if(new->color == COLOR_RED)
     {
-        if(new->prev->prev->right->color == 1 && new->prev->prev->color == 0 && new->prev->prev->left->color==1)
+        if((new->prev->prev->right->color == COLOR_RED) && (new->prev->prev->color == COLOR_BLACK) && (new->prev->prev->left->color == COLOR_RED))
         {
             new->prev->prev->color = 1;
             new->prev->prev->right->color = 0;

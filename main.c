@@ -1,6 +1,7 @@
 
 #include "lib.h"
 #include "reader.h"
+#include "util.h"
 
 struct app {
     bool         running;     /* Application running */
@@ -20,43 +21,13 @@ void func0() {
 }
 
 /**
- * Ввод числа
-**/
-int input_number(const char *prompt) {
-    int value;
-    printf("%s\n", prompt);
-    scanf("%d", &value);
-    return value;
-}
-
-/**
- * Ввод строки
- *
- * Note: Программист в ответе за выделенную память функцией `input_text`
- */
-char *input_text(const char *prompt) {
-    int lenn = 512;
-    char *value = (char *)calloc(lenn, sizeof(char));
-    printf("%s\n", prompt);
-    scanf("%s", value);
-    return value;
-}
-
-/**
  * Добавление элемента
  */
 void func1() {
     int key1 = input_number("Input key of your knot");
     char *info1 = input_text("Input info in your knot");
     printf("debug: key = %d value = %s\n", key1, info1);
-    if (app.Elist == NULL) {
-        printf("debug: func1: create root\n");
-        app.Elist = elist_new();
-        app.Elist->root = knot_new(key1, info1, app.Elist, app.Elist);
-    } else {
-        printf("debug: func1: add node\n");
-        adding_knot(app.Elist, key1, info1);
-    }
+    adding_knot(app.Elist, key1, info1);
     free(info1);
 }
 
@@ -86,14 +57,7 @@ void func3() {
 
 void custom_read_pair(int key, char *value) {
 //    printf("debug: read_pair: key = %d value = %s\n", key, value);
-
-    if (app.Elist == NULL) {
-        app.Elist = elist_new();
-        app.Elist->root = knot_new(key, value, app.Elist, app.Elist);
-    } else {
-        adding_knot(app.Elist, key, value);
-    }
-
+    adding_knot(app.Elist, key, value);
 }
 
 void func4() {
@@ -137,24 +101,25 @@ void init() {
     app.running = true;
     app.start0 = time(NULL);
 
-    app.Elist = NULL;
+    app.Elist = elist_new();
 
 }
 
 void fini() {
 
-    /* Освобождение памяти */
+    /* Удаление RBTree по ключу */
     time_t start0 = time(NULL);
     if(app.Elist->root) {
         while (del_knot(app.Elist, app.Elist->root->key) != 25);
-    } else {
-        free(app.Elist);
     }
     time_t stop0 = time(NULL);
     double duration0 = stop0 - start0;
     printf("Time of deleating: %10.f seconds\n", duration0);
 
-    /* Время работы приложения */
+    /* Удаление NIL элемента */
+    elist_release(app.Elist);
+
+    /* Профилирование времени работы всего приложения */
     app.stop0 = time(NULL);
     double app_duration = app.stop0 - app.start0;
     printf("Time of application: %10.f seconds\n", app_duration);

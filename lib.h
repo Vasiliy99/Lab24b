@@ -20,6 +20,11 @@ struct knot {
     struct knot * left;
 };
 
+enum Color {
+    COLOR_BLACK = 0,
+    COLOR_RED   = 1,
+};
+
 int Show_possibilities();
 
 int Fixing_in(knot * Elist, knot * new);
@@ -55,3 +60,5 @@ void elist_reset(struct knot *Elist);
 void add_node_info(struct knot *now, char *info1);
 
 void show_node(struct knot *now);
+
+void elist_release(struct knot *now);
